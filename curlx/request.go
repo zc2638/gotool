@@ -3,6 +3,7 @@ package curlx
 import (
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -51,6 +52,7 @@ type FormData struct {
 
 type HttpReq struct {
 	client     *http.Client
+	transport  *http.Transport
 	resp       *HttpResp
 	Url        string
 	Method     string
@@ -63,6 +65,28 @@ type HttpReq struct {
 	CertFile   string
 	KeyFile    string
 	Timeout    time.Duration
+}
+
+func NewTransportCert(certFilePath, keyFilePath string) (tls.Certificate, error) {
+	return tls.LoadX509KeyPair(certFilePath, keyFilePath)
+}
+
+func NewTransport(certFilePath, keyFilePath string, InsecureSkipVerify bool) (*http.Transport, error) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: InsecureSkipVerify},
+	}
+	if certFilePath == "" {
+		return nil, errors.New("certFilePath is empty")
+	}
+	cert, err := NewTransportCert(certFilePath, keyFilePath)
+	if err != nil {
+		return nil, err
+	}
+	tr.DisableCompression = true
+	tr.TLSClientConfig = &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+	return tr, nil
 }
 
 func (h *HttpReq) buildUrl() {
@@ -106,26 +130,23 @@ func (h *HttpReq) SetClient(client *http.Client) {
 	h.client = client
 }
 
+func (h *HttpReq) SetTransport(transport *http.Transport) {
+	h.transport = transport
+}
+
 func (h *HttpReq) initClient() error {
 	if h.client != nil {
 		return nil
 	}
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	h.client = &http.Client{
+		Timeout: h.Timeout,
 	}
 	if h.CertFile != "" {
-		cert, err := tls.LoadX509KeyPair(h.CertFile, h.KeyFile)
+		tr, err := NewTransport(h.CertFile, h.KeyFile, false)
 		if err != nil {
 			return err
 		}
-		tr.DisableCompression = true
-		tr.TLSClientConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
-	}
-	h.client = &http.Client{
-		Transport: tr,
-		Timeout:   h.Timeout,
+		h.client.Transport = tr
 	}
 	return nil
 }
