@@ -27,7 +27,7 @@ const (
 const (
 	CT_APPLICATION_FORM_URLENCODED = "application/x-www-form-urlencoded"
 	CT_APPLICATION_JSON            = "application/json"
-	CT_APPLICATION_JSON_UTF8       = "application/json;charset=UTF-8"
+	CT_APPLICATION_JSON_UTF8       = "application/json; charset=UTF-8"
 	CT_APPLICATION_OCTET_STREAM    = "application/octet-stream"
 	CT_APPLICATION_PDF             = "application/pdf"
 	CT_APPLICATION_XML             = "application/xml"
@@ -38,6 +38,7 @@ const (
 	CT_TEXT_MARKDOWN               = "text/markdown"
 	CT_TEXT_PLAIN                  = "text/plain"
 	CT_TEXT_XML                    = "text/xml"
+	CT_TEXT_XML_UTF8               = "text/xml; charset=UTF-8"
 )
 
 type FileInfo struct {
