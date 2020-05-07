@@ -34,3 +34,9 @@ func SetTransport(certFilePath, keyFilePath string) (RequestOption, error) {
 		}
 	}, nil
 }
+
+func SetBeforeExec(fs ...RequestFunc) RequestOption {
+	return func(request *Request) {
+		request.before = fs
+	}
+}

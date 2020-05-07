@@ -18,9 +18,12 @@ type FileInfo struct {
 	Stream io.Reader
 }
 
+type RequestFunc func(*Request) error
+
 type Request struct {
 	client             *http.Client
 	transport          *http.Transport
+	before             []RequestFunc
 	Url                string
 	Method             string
 	Header             map[string]string
@@ -98,6 +101,14 @@ func (h *Request) Do() (*Response, error) {
 	h.buildUrl()
 	h.buildBody()
 	h.initClient()
+
+	if h.before != nil {
+		for _, f := range h.before {
+			if err := f(h); err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	bReader := h.BodyReader
 	if bReader == nil {
