@@ -18,7 +18,7 @@ type FileInfo struct {
 	Stream io.Reader
 }
 
-type RequestFunc func(*Request) error
+type RequestFunc func(request *Request) error
 
 type Request struct {
 	client             *http.Client
@@ -29,6 +29,7 @@ type Request struct {
 	Header             map[string]string
 	Query              map[string]string
 	Params             map[string]string
+	Data               interface{}
 	FileData           map[string]FileInfo
 	Body               []byte
 	BodyReader         io.Reader
@@ -98,10 +99,6 @@ func (h *Request) initClient() {
 
 func (h *Request) Do() (*Response, error) {
 
-	h.buildUrl()
-	h.buildBody()
-	h.initClient()
-
 	if h.before != nil {
 		for _, f := range h.before {
 			if err := f(h); err != nil {
@@ -109,6 +106,10 @@ func (h *Request) Do() (*Response, error) {
 			}
 		}
 	}
+
+	h.buildUrl()
+	h.buildBody()
+	h.initClient()
 
 	bReader := h.BodyReader
 	if bReader == nil {
