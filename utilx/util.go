@@ -1,7 +1,6 @@
 package utilx
 
 import (
-	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -69,7 +68,7 @@ func InSlice(val interface{}, array interface{}) (exists bool, index int) {
 }
 
 // 通用map转字符串map
-func MapToStringMap(data map[string]interface{}) (map[string]string, error) {
+func MapToStringMap(data map[string]interface{}) map[string]string {
 
 	var res = make(map[string]string)
 	for k, v := range data {
@@ -104,10 +103,8 @@ func MapToStringMap(data map[string]interface{}) (map[string]string, error) {
 			val = strconv.FormatBool(v.(bool))
 		case string:
 			val = v.(string)
-		default:
-			return nil, errors.New("type cannot be resolved: key(" + k + ")")
 		}
 		res[k] = val
 	}
-	return res, nil
+	return res
 }
