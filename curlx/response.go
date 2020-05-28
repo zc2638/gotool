@@ -12,6 +12,7 @@ import (
  */
 type Response struct {
 	*http.Response
+	Result []byte
 }
 
 func NewResponse(res *http.Response) (*Response, error) {
@@ -26,6 +27,7 @@ func (res *Response) ParseBody() ([]byte, error) {
 	if err := res.Body.Close(); err != nil {
 		return nil, err
 	}
+	res.Result = body
 	return body, nil
 }
 

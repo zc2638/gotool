@@ -34,10 +34,10 @@ func UnderlineToCamel(s string) string {
 	num := len(s) - 1
 	for i := 0; i <= num; i++ {
 		d := s[i]
-		if k == false && d >= 'A' && d <= 'Z' {
+		if !k && d >= 'A' && d <= 'Z' {
 			k = true
 		}
-		if d >= 'a' && d <= 'z' && (j || k == false) {
+		if d >= 'a' && d <= 'z' && (j || !k) {
 			d = d - 32
 			j, k = false, true
 		}
@@ -57,7 +57,7 @@ func InSlice(val interface{}, array interface{}) (exists bool, index int) {
 	case reflect.Slice:
 		s := reflect.ValueOf(array)
 		for i := 0; i < s.Len(); i++ {
-			if reflect.DeepEqual(val, s.Index(i).Interface()) == true {
+			if reflect.DeepEqual(val, s.Index(i).Interface()) {
 				index = i
 				exists = true
 				return

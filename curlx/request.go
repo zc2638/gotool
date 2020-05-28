@@ -26,7 +26,7 @@ type Request struct {
 	before             []RequestFunc
 	Url                string
 	Method             string
-	Header             map[string]string
+	Header             http.Header
 	Query              map[string]string
 	Params             map[string]string
 	Data               interface{}
@@ -67,16 +67,14 @@ func (h *Request) buildUrl() {
 }
 
 func (h *Request) buildBody() {
-	if h.Body != nil || h.BodyReader != nil {
-		return
-	}
-
-	params := url.Values{}
-	for k, v := range h.Params {
-		params.Set(k, v)
-	}
-	h.Body = []byte(params.Encode())
 	if h.BodyReader == nil {
+		if h.Body == nil {
+			params := url.Values{}
+			for k, v := range h.Params {
+				params.Set(k, v)
+			}
+			h.Body = []byte(params.Encode())
+		}
 		h.BodyReader = bytes.NewReader(h.Body)
 	}
 }
@@ -98,7 +96,6 @@ func (h *Request) initClient() {
 }
 
 func (h *Request) Do() (*Response, error) {
-
 	if h.before != nil {
 		for _, f := range h.before {
 			if err := f(h); err != nil {
@@ -106,25 +103,15 @@ func (h *Request) Do() (*Response, error) {
 			}
 		}
 	}
-
 	h.buildUrl()
 	h.buildBody()
 	h.initClient()
-
-	bReader := h.BodyReader
-	if bReader == nil {
-		bReader = bytes.NewReader(h.Body)
-	}
-
-	req, err := http.NewRequest(h.Method, h.Url, bReader)
+	req, err := http.NewRequest(h.Method, h.Url, h.BodyReader)
 	if err != nil {
 		return nil, err
 	}
-
 	if h.Header != nil {
-		for k, v := range h.Header {
-			req.Header.Set(k, v)
-		}
+		req.Header = h.Header
 	}
 
 	res, err := h.client.Do(req)
@@ -145,12 +132,7 @@ func (h *Request) Get() ([]byte, error) {
 
 func (h *Request) Post() ([]byte, error) {
 	h.Method = MethodPOST
-	if h.Header == nil {
-		h.Header = make(map[string]string)
-	}
-	if _, ok := h.Header[HeaderContentType]; !ok {
-		h.Header[HeaderContentType] = ApplicationFormURLEncoded
-	}
+	h.Header.Set(HeaderContentType, ApplicationFormURLEncoded)
 	res, err := h.Do()
 	if err != nil {
 		return nil, err
@@ -162,35 +144,24 @@ func (h *Request) PostForm() ([]byte, error) {
 	h.Method = MethodPOST
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
-
-	if h.FileData != nil {
-		for k, file := range h.FileData {
-			part, err := w.CreateFormFile(k, file.Name)
-			if err != nil {
-				return nil, err
-			}
-			if _, err = io.Copy(part, file.Stream); err != nil {
-				return nil, err
-			}
+	for k, file := range h.FileData {
+		part, err := w.CreateFormFile(k, file.Name)
+		if err != nil {
+			return nil, err
+		}
+		if _, err = io.Copy(part, file.Stream); err != nil {
+			return nil, err
 		}
 	}
-
-	if h.Params != nil {
-		for k, v := range h.Params {
-			if err := w.WriteField(k, v); err != nil {
-				return nil, err
-			}
+	for k, v := range h.Params {
+		if err := w.WriteField(k, v); err != nil {
+			return nil, err
 		}
 	}
-
 	if err := w.Close(); err != nil {
 		return nil, err
 	}
-
-	if h.Header == nil {
-		h.Header = make(map[string]string)
-	}
-	h.Header[HeaderContentType] = w.FormDataContentType()
+	h.Header.Set(HeaderContentType, w.FormDataContentType())
 	h.BodyReader = &buf
 
 	res, err := h.Do()
