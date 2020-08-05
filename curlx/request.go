@@ -38,6 +38,7 @@ type Request struct {
 
 func NewRequest(options ...RequestOption) *Request {
 	req := &Request{}
+	req.Header = make(http.Header)
 	for _, option := range options {
 		option(req)
 	}
@@ -132,6 +133,9 @@ func (h *Request) Get() ([]byte, error) {
 
 func (h *Request) Post() ([]byte, error) {
 	h.Method = MethodPOST
+	if h.Header == nil {
+		h.Header = make(http.Header)
+	}
 	h.Header.Set(HeaderContentType, ApplicationFormURLEncoded)
 	res, err := h.Do()
 	if err != nil {
@@ -160,6 +164,9 @@ func (h *Request) PostForm() ([]byte, error) {
 	}
 	if err := w.Close(); err != nil {
 		return nil, err
+	}
+	if h.Header == nil {
+		h.Header = make(http.Header)
 	}
 	h.Header.Set(HeaderContentType, w.FormDataContentType())
 	h.BodyReader = &buf
